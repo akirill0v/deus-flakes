@@ -16,6 +16,8 @@ buildGoModule rec {
 
   enableParallelBuilding = true;
 
+  vendorSha256 = metadata.vendorSha256;
+
   meta = with lib; {
     description = "A cli tool for importing and exporting Hashicorp Vault secrets";
     homepage    = meta.repo_git;

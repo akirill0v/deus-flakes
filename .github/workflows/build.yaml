@@ -1,0 +1,41 @@
+name: "Build"
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    concurrency: build-${{matrix.jobs.branch}}-${{matrix.jobs.target}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: setup-nix
+      uses: cachix/install-nix-action@v14
+      with:
+        install_url: https://nixos-nix-install-tests.cachix.org/serve/a3xxamann3mf9s8fp7kzdfdppli2zzhi/install
+        install_options: --tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve --daemon
+        extra_nix_config: |
+          experimental-features = nix-command flakes ca-references
+          extra-binary-caches = https://deus-flakes.cachix.org
+          extra-trusted-public-keys = deus-flakes.cachix.org-1:+p1Jj8icFyq5NB/NQCKeCfVsYu46ZeASXG6rllmFv0E=
+    - name: prepare
+      run: |
+        cat << EOF | .github/exec
+          nix-build --version
+          git config --global user.name 'Aleksandr Kirillov'
+          git config --global user.email 'saratovsource@gmail.com'
+          git remote update
+        EOF
+    - name: build
+      run: |
+        BUILD="packages.nix"
+
+        cat << EOF | .github/exec
+          set -euo pipefail
+          if ! .github/exec nix-build-uncached "${BUILD}"; then
+            echo "something wasn't cached, building"
+            .github/exec nix-build "${BUILD}"
+            exit
+          fi
+        EOF

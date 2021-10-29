@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ "${1:-""}" == "__init" ]]; then
+  cat << EOF | "${0}"
+git config --global user.name 'Aleksandr Kirillov'
+git config --global user.email 'saratovsource@gmail.com'
+git remote update
+EOF
+  exit
+elif [[ "${1-:""}" != "" ]] && [[ "${1-:""}" != ":" ]]; then
+  nix-shell --pure \
+    --keep GITHUB_ACTION \
+    --keep CI_JOB_ID \
+    --keep CACHIX_SIGNING_KEY \
+    --run "$(printf '\"%s\" ' "${@}")"
+  exit
+else
+  #cat <(printf "set -x\n set -euo pipefail\n") /dev/stdin | \
+  cat /dev/stdin | \
+    nix-shell --pure \
+      --keep CI_JOB_ID \
+      --keep CACHIX_SIGNING_KEY \
+      --run "bash --noprofile --norc -eo pipefail </dev/stdin"
+  exit
+fi
